@@ -1,15 +1,20 @@
 package com.example.myapplication
 
 import android.content.Context
+import android.content.DialogInterface
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.icu.text.DateFormat
+import android.icu.text.MessageFormat.format
 import android.os.Bundle
 import android.os.Handler
+import android.text.format.DateFormat.format
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.azure.messaging.eventhubs.EventData
@@ -17,20 +22,37 @@ import com.azure.messaging.eventhubs.EventDataBatch
 import com.azure.messaging.eventhubs.EventHubClientBuilder
 import com.azure.messaging.eventhubs.EventHubProducerClient
 import com.google.gson.Gson
+import org.slf4j.helpers.MessageFormatter.format
 import java.lang.Math.abs
-import java.util.*
+import java.lang.String.format
+import java.text.MessageFormat.format
 
 
 enum class DataType {
     Accelometer, Gyroscope, Steps
 }
 
-private lateinit var textMaxesAcce: TextView
 
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
+    //buttons to start (stand/walk/run are used for "learning" creating labeled activities)
     private lateinit var clickButton: Button
+    private lateinit var clickStandButton: Button
+    private lateinit var clickWalkButton: Button
+    private lateinit var clickRunButton: Button
+    private var testLabels = arrayOf("standing", "walking", "running")
+
+    //used to conditionally allow sending data
+    private var SendingData = false
+
+    //the label that is used (if null label, is used for "testing" if not null is used for "learning"
+    private var labelUsed: String? = null
+
+    //the timestamp of when the activity started (used to identify it)
+    private var activityTimestamp: Long = 0
+
+
     private lateinit var sensorManager: SensorManager
     private var accelometerSensor: Sensor? = null
     private var gyroscopeSensor: Sensor? = null
@@ -41,6 +63,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var maxes = FloatArray(3)
     private var maxesGyro = FloatArray(3)
     lateinit var eventDataBatch: EventDataBatch
+    private lateinit var textMaxesAcce: TextView
+
 
     object RepeatHelper {
         fun repeatDelayed(delay: Long, todo: () -> Unit) {
@@ -84,30 +108,62 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         textSteps = findViewById(R.id.tv_stepsTaken)
         //eventhub test
         clickButton = findViewById(R.id.clickButton)
+        clickStandButton = findViewById(R.id.clickStandButton)
+        clickWalkButton = findViewById(R.id.clickWalkButton)
+        clickRunButton = findViewById(R.id.clickRunButton)
 
         clickButton.setOnClickListener {
-
-            val allEvents: List<EventData> = Arrays.asList(EventData("Foo"), EventData("Bar"))
-
-
-        };
+            labelUsed = null
+            BaseButtonStartPress()
+        }
+        clickStandButton.setOnClickListener {
+            labelUsed = testLabels[0]
+            BaseButtonStartPress()
+        }
+        clickWalkButton.setOnClickListener {
+            labelUsed = testLabels[1]
+            BaseButtonStartPress()
+        }
+        clickRunButton.setOnClickListener {
+            labelUsed = testLabels[2]
+            BaseButtonStartPress()
+        }
         setUpSensorStuff()
         loadData()
         resetSteps()
 
+
+    }
+
+    private fun BaseButtonStartPress() {
         val delay = 1000L
+        SendingData = true
+        activityTimestamp = System.currentTimeMillis()
+        eventDataBatch = producer.createBatch()
         RepeatHelper.repeatDelayed(delay) {
             SetBatchToEH()
         }
+
+        val alert = android.app.AlertDialog.Builder(this)
+        alert.setTitle(
+            "Started " + labelUsed + " time:" + DateFormat.getTimeInstance()
+                .format(activityTimestamp)
+        )
+
+        alert.setNeutralButton("Finish", { dialog, whichButton ->
+            SendingData = false
+            labelUsed = null
+            activityTimestamp = 0
+        })
+
+        alert.show()
     }
 
+
     private fun SetBatchToEH() {
-        var ri=eventDataBatch.count
-        if (eventDataBatch.count > 0) {
-            var copyBatch=eventDataBatch;
-            eventDataBatch=producer.createBatch()
-            var r=copyBatch.count
-            var rr=eventDataBatch.count
+        if (eventDataBatch.count > 0 && SendingData) {
+            var copyBatch = eventDataBatch
+            eventDataBatch = producer.createBatch()
             producer.send(copyBatch)
         }
 
@@ -123,7 +179,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        var tsLong = System.currentTimeMillis()
+        val tsLong = System.currentTimeMillis()
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER)
             HandleAcceleration(event, tsLong)
         if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER)
@@ -142,26 +198,32 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (abs(gyro1[2]) > abs(maxesGyro[2]))
             maxesGyro[2] = gyro1[2]
 
-        textMaxesGyro.text = "${maxesGyro[0]},${maxesGyro[1]},${maxesGyro[2]}";
+        textMaxesGyro.text = "${maxesGyro[0]},${maxesGyro[1]},${maxesGyro[2]}"
         textGyro.text = "${gyro1[0]},${gyro1[1]},${gyro1[2]}"
 
-        eventDataBatch.tryAdd(EventData(Gson().toJson(object {
-            val type = DataType.Gyroscope
-            val values = event.values
-            val timestamp = tsLong
-        })))
+        if (SendingData)
+            eventDataBatch.tryAdd(EventData(Gson().toJson(object {
+                val type = DataType.Gyroscope
+                val values = event.values
+                val timestamp = tsLong
+                val activityStartTimestamp = activityTimestamp
+                val label = labelUsed
+            })))
     }
 
     private fun HadleSteps(event: SensorEvent, tsLong: Long) {
-        totalSteps = event!!.values[0]
+        totalSteps = event.values[0]
         val currentSteps = totalSteps.toInt() - previousTotalSteps.toInt()
         textSteps.text = ("$currentSteps")
 
-        eventDataBatch.tryAdd(EventData(Gson().toJson(object {
-            val type = DataType.Steps
-            val values = event.values
-            val timestamp = tsLong
-        })))
+        if (SendingData)
+            eventDataBatch.tryAdd(EventData(Gson().toJson(object {
+                val type = DataType.Steps
+                val values = event.values
+                val timestamp = tsLong
+                val activityStartTimestamp = activityTimestamp
+                val label = labelUsed
+            })))
     }
 
     private fun HandleAcceleration(event: SensorEvent, tsLong: Long) {
@@ -173,14 +235,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (abs(acc1[2]) > abs(maxes[2]))
             maxes[2] = acc1[2]
 
-        textMaxesAcce.text = "${maxes[0]},${maxes[1]},${maxes[2]}";
+        textMaxesAcce.text = "${maxes[0]},${maxes[1]},${maxes[2]}"
         textAcce.text = "${acc1[0]},${acc1[1]},${acc1[2]}"
 
-        eventDataBatch.tryAdd(EventData(Gson().toJson(object {
-            val type = DataType.Accelometer
-            val values = event.values
-            val timestamp = tsLong
-        })))
+        if (SendingData)
+            eventDataBatch.tryAdd(EventData(Gson().toJson(object {
+                val type = DataType.Accelometer
+                val values = event.values
+                val timestamp = tsLong
+                val activityStartTimestamp = activityTimestamp
+                val label = labelUsed
+            })))
 
     }
 
@@ -202,7 +267,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     fun resetSteps() {
-        var tv_stepsTaken = findViewById<TextView>(R.id.tv_stepsTaken)
+        val tv_stepsTaken = findViewById<TextView>(R.id.tv_stepsTaken)
         tv_stepsTaken.setOnClickListener {
             // This will give a toast message if the user want to reset the steps
             Toast.makeText(this, "Long tap to reset steps", Toast.LENGTH_SHORT).show()

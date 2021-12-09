@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,14 +8,55 @@
 
     <Button
         android:id="@+id/clickButton"
-        android:layout_width="300px"
-        android:layout_height="100px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginStart="145dp"
-        android:layout_marginTop="101dp"
-        android:layout_marginEnd="152dp" />
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="76dp"
+        android:layout_marginEnd="28dp"
+        android:text="Test" />
+
+
+    <Button
+        android:id="@+id/clickStandButton"
+        android:layout_width="300dp"
+        android:layout_height="35dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="100dp"
+        android:layout_marginEnd="100dp"
+        android:layout_marginTop="150dp"
+        android:background="#facc"
+        android:text="Stand Learn" />
+
+    <Button
+        android:id="@+id/clickRunButton"
+        android:layout_width="300px"
+        android:layout_height="35dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="100dp"
+        android:layout_marginEnd="100dp"
+        android:layout_marginTop="250dp"
+        android:background="#facc"
+        android:text="Run Learn" />
+
+    <Button
+        android:id="@+id/clickWalkButton"
+        android:layout_width="400px"
+        android:layout_height="35dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="100dp"
+        android:layout_marginEnd="100dp"
+        android:layout_marginTop="200dp"
+        android:background="#facc"
+        android:text="Walk Learn" />
 
     <TextView
         android:id="@+id/tv_text_acce"
