@@ -26,13 +26,25 @@ import org.slf4j.helpers.MessageFormatter.format
 import java.lang.Math.abs
 import java.lang.String.format
 import java.text.MessageFormat.format
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.nio.charset.Charset
 
 
 enum class DataType {
     Accelometer, Gyroscope, Steps
 }
 
-
+data class SensorData(
+    var Accel_X: Long,
+    var Accel_Y: Long,
+    var Accel_Z: Long,
+    var Gyro_X: Long,
+    var Gyro_Y: Long,
+    var Gyro_Z: Long,
+    var Temp: Double
+)
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
@@ -65,6 +77,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     lateinit var eventDataBatch: EventDataBatch
     private lateinit var textMaxesAcce: TextView
 
+
+    private final var fromSensor = true
 
     object RepeatHelper {
         fun repeatDelayed(delay: Long, todo: () -> Unit) {
@@ -131,8 +145,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         setUpSensorStuff()
         loadData()
         resetSteps()
-
-
     }
 
     private fun BaseButtonStartPress() {
@@ -140,8 +152,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         SendingData = true
         activityTimestamp = System.currentTimeMillis()
         eventDataBatch = producer.createBatch()
-        RepeatHelper.repeatDelayed(delay) {
-            SetBatchToEH()
+        if(this.fromSensor){
+            SendSensorDataToEH()
+        } else {
+            RepeatHelper.repeatDelayed(delay) {
+                SetBatchToEH()
+            }
         }
 
         val alert = android.app.AlertDialog.Builder(this)
@@ -159,6 +175,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         alert.show()
     }
 
+    private fun SendSensorDataToEH(){
+        val threadWithRunnable = Thread(UdpReader(this.producer, this.activityTimestamp, this.labelUsed))
+        threadWithRunnable.start()
+    }
 
     private fun SetBatchToEH() {
         if (eventDataBatch.count > 0 && SendingData) {
@@ -168,7 +188,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
 
     }
-
 
     private fun setUpSensorStuff() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -274,7 +293,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
 
         tv_stepsTaken.setOnLongClickListener {
-
             previousTotalSteps = totalSteps
             tv_stepsTaken.text = 0.toString()
             saveData()
@@ -296,5 +314,60 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val savedNumber = sharedPreferences.getFloat("steps", 0f)
 
         previousTotalSteps = savedNumber
+    }
+}
+
+class UdpReader: Runnable {
+
+    private var producer: EventHubProducerClient
+    private var activityTimestamp: Long = 0
+    private var labelUsed: String? = null
+
+    constructor(eventHubProducer: EventHubProducerClient, timestamp: Long, label: String?){
+        eventHubProducer.also { this.producer = it }
+        activityTimestamp = timestamp
+        labelUsed = label
+    }
+
+
+    public override fun run() {
+        println("${Thread.currentThread()} has run.")
+        var socket: DatagramSocket? = null
+
+        try {
+            val buffer = ByteArray(2048)
+            socket = DatagramSocket(5001, InetAddress.getByName("192.168.150.70"))
+
+            while(true){
+                //Keep a socket open to listen to all the UDP trafic that is destined for this port
+                socket.broadcast = true
+                val packet = DatagramPacket(buffer, buffer.size)
+                socket.receive(packet)
+                val timestamp = System.currentTimeMillis()
+                val data = String(packet.data, 0, packet.length, Charset.defaultCharset())
+                val sensorData = Gson().fromJson(data, SensorData::class.java)
+                var accelerometerData : EventData = EventData(Gson().toJson(object {
+                    val type = DataType.Accelometer
+                    val values = listOf(sensorData.Accel_X, sensorData.Accel_Y, sensorData.Accel_Z)
+                    val timestamp = timestamp
+                    val activityStartTimestamp = activityTimestamp
+                    val label = labelUsed
+                }))
+                var gyroscopeData : EventData = EventData(Gson().toJson(object {
+                    val type = DataType.Accelometer
+                    val values = listOf(sensorData.Gyro_X, sensorData.Gyro_Y, sensorData.Gyro_Z)
+                    val timestamp = timestamp
+                    val activityStartTimestamp = activityTimestamp
+                    val label = labelUsed
+                }))
+                this.producer.send(listOf(accelerometerData, gyroscopeData))
+
+            }
+        } catch (e: Exception) {
+            println("Caught exception while receiving UDP data:" + e.toString())
+            e.printStackTrace()
+        } finally {
+            socket?.close()
+        }
     }
 }
