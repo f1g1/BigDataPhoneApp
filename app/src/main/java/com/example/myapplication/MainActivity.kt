@@ -155,12 +155,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         SendingData = true
         activityTimestamp = System.currentTimeMillis()
         eventDataBatch = producer.createBatch()
-        if(this.fromSensor){
-            SendSensorDataToEH()
-        } else {
-            RepeatHelper.repeatDelayed(delay) {
-                SetBatchToEH()
-            }
+        SendSensorDataToEH()
+        RepeatHelper.repeatDelayed(delay) {
+            SetBatchToEH()
         }
 
         val alert = android.app.AlertDialog.Builder(this)
