@@ -31,6 +31,9 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.nio.charset.Charset
 
+enum class Source{
+    Phone, Sensor
+}
 
 enum class DataType {
     Accelometer, Gyroscope, Steps
@@ -227,6 +230,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val timestamp = tsLong
                 val activityStartTimestamp = activityTimestamp
                 val label = labelUsed
+                val source = Source.Phone
             })))
     }
 
@@ -242,6 +246,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val timestamp = tsLong
                 val activityStartTimestamp = activityTimestamp
                 val label = labelUsed
+                val source = Source.Phone
             })))
     }
 
@@ -264,6 +269,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val timestamp = tsLong
                 val activityStartTimestamp = activityTimestamp
                 val label = labelUsed
+                val source = Source.Phone
             })))
 
     }
@@ -352,6 +358,7 @@ class UdpReader: Runnable {
                     val timestamp = timestamp
                     val activityStartTimestamp = activityTimestamp
                     val label = labelUsed
+                    val source = Source.Sensor
                 }))
                 var gyroscopeData : EventData = EventData(Gson().toJson(object {
                     val type = DataType.Accelometer
@@ -359,6 +366,7 @@ class UdpReader: Runnable {
                     val timestamp = timestamp
                     val activityStartTimestamp = activityTimestamp
                     val label = labelUsed
+                    val source = Source.Sensor
                 }))
                 this.producer.send(listOf(accelerometerData, gyroscopeData))
 
