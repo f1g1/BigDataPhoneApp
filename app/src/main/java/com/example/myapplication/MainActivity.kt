@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.DialogInterface
 import android.hardware.Sensor
@@ -8,8 +9,10 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.icu.text.DateFormat
 import android.icu.text.MessageFormat.format
+import android.location.Location
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.text.format.DateFormat.format
 import android.widget.Button
 import android.widget.TextView
@@ -21,6 +24,7 @@ import com.azure.messaging.eventhubs.EventData
 import com.azure.messaging.eventhubs.EventDataBatch
 import com.azure.messaging.eventhubs.EventHubClientBuilder
 import com.azure.messaging.eventhubs.EventHubProducerClient
+import com.google.android.gms.location.*
 import com.google.gson.Gson
 import org.slf4j.helpers.MessageFormatter.format
 import java.lang.Math.abs
@@ -35,19 +39,6 @@ enum class Source{
     Phone, Sensor
 }
 
-enum class DataType {
-    Accelometer, Gyroscope, Steps
-}
-
-data class SensorData(
-    var Accel_X: Long,
-    var Accel_Y: Long,
-    var Accel_Z: Long,
-    var Gyro_X: Long,
-    var Gyro_Y: Long,
-    var Gyro_Z: Long,
-    var Temp: Double
-)
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
