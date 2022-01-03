@@ -59,64 +59,6 @@
         android:text="Walk Learn" />
 
     <TextView
-        android:id="@+id/tv_text_acce"
-        android:layout_width="395dp"
-        android:layout_height="40dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="396dp"
-        android:layout_marginEnd="12dp"
-        android:text="Hello World!"
-        android:textColor="@color/black"
-        android:textSize="20sp" />
-
-    <TextView
-        android:id="@+id/tv_text_gyro"
-        android:layout_width="412dp"
-        android:layout_height="49dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginStart="0dp"
-        android:layout_marginTop="649dp"
-        android:layout_marginEnd="0dp"
-        android:text="Hello World!"
-        android:textColor="@color/black"
-        android:textSize="20sp" />
-
-    <TextView
-        android:id="@+id/tv_text_maxes_acce"
-        android:layout_width="370dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginStart="19dp"
-        android:layout_marginTop="300dp"
-        android:layout_marginEnd="23dp"
-        android:layout_marginBottom="242dp"
-        android:text="Hello World!"
-        android:textColor="@color/black"
-        android:textSize="20sp" />
-
-    <TextView
-        android:id="@+id/tv_text_maxes_gyro"
-        android:layout_width="390dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginStart="6dp"
-        android:layout_marginTop="565dp"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="242dp"
-        android:text="Hello World!"
-        android:textColor="@color/black"
-        android:textSize="20sp" />
-
-    <TextView
         android:id="@+id/tv_stepsTaken"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
